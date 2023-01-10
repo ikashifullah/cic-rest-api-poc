@@ -1,131 +1,69 @@
 import Account from '../models/account';
 import BaseController from './base.controller';
+import { getEpoch } from '../utils';
+
+
 class UsersController extends BaseController {
-	whitelist = [
-		'firstName',
-		'lastName',
-		'email',
-		'password',
-		'phoneNumber',
-		'profilePic',
-		'role',
-	];
-
-
-
-	register = async (_req, _res, next) => {
-
-		try {
-			// start code from here
-		} catch (err) {
-			err.status = 400;
-			next(err);
-		}
-	};
-
-	login = async (req, res, next) => {
-
-		try {
-			// See if user exist
-		} catch (err) {
-			err.status = 400;
-			next(err);
-		}
-	};
-
+	whitelist = [];
 
 	transactions = async (req, res, next) => {
 		try {
-			const accounts = await Account.find({}).exec();
-			console.log(accounts);
-            res.status(200).json(accounts)
-			/*
-			res.json(res.json([{
-				"id": "1",
-				"date": 1639502071000,
-				"sender": {
-					"firstName": "John",
-					"lastName": "Smith",
-					"dateOfBirth": "1970-01-23",
-					"IDNumber": "100001"
-				},
-				"recipient": {
-					"firstName": "Jane",
-					"lastName": "doe",
-					"email": "janedoe@company.com",
-					"accountNumber": "200001",
-					"bank": "TD"
-				},
-				"Amount": 100.00,
-				"CurrencyCd": "CAD",
-				"Comments": "Utility bill",
-				"status": "COMPLETED"
-			},
-			{
-				"id": "2",
-				"date": 1639486575000,
-				"sender": {
-					"firstName": "John2",
-					"lastName": "Smith",
-					"dateOfBirth": "1970-02-23",
-					"IDNumber": "100001"
-				},
-				"recipient": {
-					"firstName": "Jane2",
-					"lastName": "doe",
-					"email": "janedoe@company2.com",
-					"accountNumber": "200001",
-					"bank": "TD"
-				},
-				"Amount": 100.00,
-				"CurrencyCd": "USD",
-				"Comments": "Rent",
-				"status": "PENDING"
-			},
-			{
-				"id": "3",
-				"date": 1639478930000,
-				"sender": {
-					"firstName": "John3",
-					"lastName": "Smith",
-					"dateOfBirth": "1970-03-23",
-					"IDNumber": "100001"
-				},
-				"recipient": {
+			const {startDate, endDate} = req.query;
+			const accounts = await Account.aggregate(
+				[{ $match : { date: {
+					$gte: getEpoch(startDate, 'start'),
+					$lte: getEpoch(endDate, 'end')
+				} } }, 
+				{ "$project": {
+					"_id": 1,
+					"id": 1,
+					"date": 1,
+					"Comments": 1,
+				}},
+				{ "$sort": { "date": 1 } }
+				]
+			);
+            res.status(200).json(accounts)			
+		} catch (err) {
+			err.status = 400;
+			next(err);
+		}
+	}
 
-					"firstName": "Jane3",
-					"lastName": "doe",
-					"email": "janedoe@company3.com",
-					"accountNumber": "200001",
-					"bank": "CIBC"
-				},
-				"Amount": 300.00,
-				"CurrencyCd": "USD",
-				"Comments": "Insurance Premium",
-				"status": "IN PROGRESS"
-			},
-			{
-				"id": "4",
-				"date": 1638997755000,
-				"sender": {
-					"firstName": "John4",
-					"lastName": "Smith",
-					"dateOfBirth": "1970-04-23",
-					"IDNumber": "100001"
-				},
-				"recipient": {
-					"firstName": "Jane4",
-					"lastName": "doe",
-					"email": "janedoe@company4.com",
-					"accountNumber": "200001",
-					"bank": "RBC"
-				},
-				"Amount": 200.00,
-				"CurrencyCd": "CAD",
-				"Comments": "Cash Transfer",
-				"status": "REJECTED"
-			}]))
-			*/
+	transaction = async (req, res, next) => {
+		try {
+			const account = await Account.findOne({ id: req.params.id }).exec();
+            res.status(200).json(account)
+			
+		} catch (err) {
+			err.status = 400;
+			next(err);
+		}
+	}
+	
+	updateTransaction = async (req, res, next) => {
+		try {
+
+			const { id, comments} = req.body;
+			Account.findOne({id: id}, function(err, transaction) {
+				if(!err) {
+					console.log(transaction);
+					
+					transaction.Comments = comments;
+					transaction.save(function(err) {
+						if(!err) {
+							res.status(200).json({
+								message: 'Comment updated successfully!'
+							})
+						}
+						else {
+							res.status(200).json({
+								message: 'Comment not updated successfully!'
+							})
+						}
+					});
+				}
+			});
 			
 		} catch (err) {
 			err.status = 400;
