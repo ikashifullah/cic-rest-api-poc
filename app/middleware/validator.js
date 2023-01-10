@@ -24,3 +24,18 @@ exports.validateTransactions = [
     next();
   },
 ];
+
+exports.validateSingleTransaction = [
+    check('comments')
+      .trim()
+      .escape()
+      .not()
+      .isEmpty()
+      .withMessage('Comments can not be empty!'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty())
+      return res.status(422).json({errors: errors.array()});
+    next();
+  },
+];
